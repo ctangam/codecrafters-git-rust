@@ -6,6 +6,7 @@ use std::fs;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
+use std::path::PathBuf;
 use std::process::Stdio;
 
 use clap::Parser;
@@ -26,10 +27,15 @@ enum Command {
 
         object_hash: String,
     },
+    HashObject {
+        #[clap(short = 'w')]
+        write: bool,
+
+        path: PathBuf,
+    },
 }
 
 fn main() {
-    
     let args = Args::parse();
     match args.command {
         Command::Init => {
@@ -38,12 +44,17 @@ fn main() {
             fs::create_dir(".git/refs").unwrap();
             fs::write(".git/HEAD", "ref: refs/heads/master\n").unwrap();
             println!("Initialized git directory")
-        },
+        }
         Command::CatFile {
             pretty_print,
-            object_hash
+            object_hash,
         } => {
-            let content = fs::read(format!(".git/objects/{}/{}", &object_hash[..2], &object_hash[2..])).unwrap();
+            let content = fs::read(format!(
+                ".git/objects/{}/{}",
+                &object_hash[..2],
+                &object_hash[2..]
+            ))
+            .unwrap();
             let z = ZlibDecoder::new(&content[..]);
             let mut z = BufReader::new(z);
             let mut buf = Vec::new();
@@ -59,6 +70,11 @@ fn main() {
             let stdout = std::io::stdout();
             let mut stdout = stdout.lock();
             let n = std::io::copy(&mut z, &mut stdout).unwrap();
+        }
+        Command::HashObject { 
+            write, 
+            path 
+        } => {
             
         }
     }
